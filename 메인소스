@@ -62,7 +62,7 @@ void Go_Right(){ // 우회전 선언
 }
 
 void Warning_Sound(){ // 삐-삐 소리 나는 경고음
-  digitalWrite(speakerpin, HIGT);
+  digitalWrite(speakerpin, HIGH);
   delay(500);
   digitalWrite(speakerpin, LOW);
   delay(500);
