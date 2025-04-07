@@ -73,7 +73,7 @@ void Emergency_Stop(){ // 긴급 정지 소리 + 멈춤
   MOTOR2.run(RELEASE);
   MOTOR3.run(RELEASE);
   MOTOR4.run(RELEASE);
-  digitalWrite(speakerpin, HIGT);
+  digitalWrite(speakerpin, HIGH);
   delay(20);
 }
 
