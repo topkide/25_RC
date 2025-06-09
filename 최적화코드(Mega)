@@ -1,0 +1,102 @@
+#define trigPin 5
+#define echoPin 4
+#define BUZZER_PIN 8
+
+#include <AFMotor.h>
+#include <SoftwareSerial.h>
+
+// 블루투스는 Mega에서는 SoftwareSerial 대신 하드웨어 시리얼 사용 가능
+// 여기선 여전히 소프트웨어 시리얼로 구성 (TX:11, RX:10)
+SoftwareSerial PhoneBT(10, 11);
+
+// 모터 객체 배열로 처리
+AF_DCMotor motors[] = {
+  AF_DCMotor(1),
+  AF_DCMotor(2),
+  AF_DCMotor(3),
+  AF_DCMotor(4)
+};
+
+void setAllMotorsSpeed(int speed) {
+  for (int i = 0; i < 4; i++) motors[i].setSpeed(speed);
+}
+
+void runMotors(uint8_t m1, uint8_t m2, uint8_t m3, uint8_t m4) {
+  motors[0].run(m1);
+  motors[1].run(m2);
+  motors[2].run(m3);
+  motors[3].run(m4);
+}
+
+// 전후좌우 움직임
+void Go_Forward()  { runMotors(FORWARD,  FORWARD,  FORWARD,  FORWARD);  }
+void Go_Backward() { runMotors(BACKWARD, BACKWARD, BACKWARD, BACKWARD); }
+void Go_Left()     { runMotors(FORWARD,  BACKWARD, BACKWARD, FORWARD);  }
+void Go_Right()    { runMotors(BACKWARD, FORWARD,  FORWARD,  BACKWARD); }
+void Stop_Release(){ runMotors(RELEASE,  RELEASE,  RELEASE,  RELEASE);  }
+
+void Warning_Sound() {
+  digitalWrite(BUZZER_PIN, HIGH);
+  delay(300);
+  digitalWrite(BUZZER_PIN, LOW);
+  delay(200);
+}
+
+void Emergency_Stop() {
+  Stop_Release();
+  digitalWrite(BUZZER_PIN, HIGH);
+  delay(500);
+  digitalWrite(BUZZER_PIN, LOW);
+}
+
+float measureDistance() {
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  long duration = pulseIn(echoPin, HIGH);
+  return (340.0 * duration) / 10000.0 / 2.0;
+}
+
+void handleBluetoothCommand(char cmd) {
+  switch (cmd) {
+    case 'F': Serial.println("Forward 전진");  Go_Forward();   break;
+    case 'B': Serial.println("Backward 후진"); Go_Backward();  break;
+    case 'L': Serial.println("Left 좌회전");   Go_Left();      break;
+    case 'R': Serial.println("Right 우회전");  Go_Right();     break;
+    case 'S': Serial.println("Stop 정지");     Stop_Release(); break;
+  }
+}
+
+void setup() {
+  PhoneBT.begin(9600);
+  Serial.begin(9600);
+
+  setAllMotorsSpeed(250);
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+  pinMode(BUZZER_PIN, OUTPUT);
+  digitalWrite(BUZZER_PIN, LOW);
+}
+
+void loop() {
+  if (PhoneBT.available()) {
+    char cmd = PhoneBT.read();
+    Serial.print("받은 명령: "); Serial.println(cmd);
+    handleBluetoothCommand(cmd);
+  }
+
+  float distance = measureDistance();
+  Serial.print("측정 거리: ");
+  Serial.println(distance);
+
+  if (distance < 7) {
+    Serial.println("Emergency Stop 긴급제동");
+    Emergency_Stop();
+  } else if (distance < 13) {
+    Serial.println("Warning 경고");
+    Warning_Sound();
+  }
+
+  delay(50); // 너무 자주 반복되면 부저가 과도하게 울릴 수 있음
+}
