@@ -6,8 +6,10 @@ int speakerpin = 8; // 부저 핀 설정
 #include <AFMotor.h> // L293D 모터쉴드 라이브러리 별도의 다운로드 필요
 #include <SoftwareSerial.h> // 블루투스 통신을 위한 기본 해더 파일
 
-SoftwareSerial PhoneBT(2, 3); // 블루투스 통신 및 아두이노 통신 연결선 TX = 2, RX = 3
-
+//SoftwareSerial PhoneBT(2, 3); // 블루투스 통신 및 아두이노 통신 연결 TX = 2, RX = 3
+/* 아두이노 메가는 별도의 설정 필요 없음 TX = 19, RX = 18
+* 블루투스 비밀번호 : 1597
+*/
 
 // 모터의 전후좌우 방향을 컨트룰하는 PIN 번호 선언
 AF_DCMotor MOTOR1(1); // 모터쉴드 M1 지정
