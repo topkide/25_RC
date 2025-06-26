@@ -1,0 +1,170 @@
+int trigPin1 = 22;
+int echoPin1 = 23;
+
+int trigPin2 = 24;
+int echoPin2 = 25;
+
+int speakerpin = 26;
+
+
+
+#include <AFMotor.h>
+#include <SoftwareSerial.h>
+
+AF_DCMotor MOTOR1(1);
+AF_DCMotor MOTOR2(2);
+AF_DCMotor MOTOR3(3);
+AF_DCMotor MOTOR4(4);
+
+#define ActionTime 3000
+
+void Stop_Release() {
+  MOTOR1.run(RELEASE);
+  MOTOR2.run(RELEASE);
+  MOTOR3.run(RELEASE);
+  MOTOR4.run(RELEASE);
+  delay(20);
+}
+
+void Go_Forward() {
+  MOTOR1.run(FORWARD);
+  MOTOR2.run(FORWARD);
+  MOTOR3.run(FORWARD);
+  MOTOR4.run(FORWARD);
+  delay(20);
+}
+
+void Go_Backward() {
+  MOTOR1.run(BACKWARD);
+  MOTOR2.run(BACKWARD);
+  MOTOR3.run(BACKWARD);
+  MOTOR4.run(BACKWARD);
+  delay(20);
+}
+
+void Go_Left() {
+  MOTOR1.run(FORWARD);
+  MOTOR2.run(BACKWARD);
+  MOTOR3.run(BACKWARD);
+  MOTOR4.run(FORWARD);
+  delay(20);
+}
+
+void Go_Right() {
+  MOTOR1.run(BACKWARD);
+  MOTOR2.run(FORWARD);
+  MOTOR3.run(FORWARD);
+  MOTOR4.run(BACKWARD);
+  delay(20);
+}
+
+void Warning_Sound(){
+  digitalWrite(speakerpin, HIGH);
+  delay(500);
+  digitalWrite(speakerpin, LOW);
+  delay(500);
+}
+
+void Emergency_Stop(){
+  MOTOR1.run(RELEASE);
+  MOTOR2.run(RELEASE);
+  MOTOR3.run(RELEASE);
+  MOTOR4.run(RELEASE);
+  digitalWrite(speakerpin, HIGH);
+  delay(20);
+}
+
+float readDistance(int trigPin, int echoPin) {
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  long duration = pulseIn(echoPin, HIGH, 20000);
+  if (duration == 0) {
+    return -1; // 실패 표시
+  }
+  return duration * 0.034 / 2;
+}
+
+void setup() {
+  Serial.begin(9600);
+  Serial1.begin(9600);
+
+  MOTOR1.setSpeed(250);
+  MOTOR2.setSpeed(250);
+  MOTOR3.setSpeed(250);
+  MOTOR4.setSpeed(250);
+
+  pinMode(trigPin1, OUTPUT);
+  pinMode(echoPin1, INPUT);
+  pinMode(trigPin2, OUTPUT);
+  pinMode(echoPin2, INPUT);
+  pinMode(speakerpin, OUTPUT);
+}
+
+void loop() {
+  while(Serial1.available()){
+    char car = Serial1.read();
+    Serial.print(car);
+    switch (car) {
+      case 'F':
+        Serial.println("전진");
+        Go_Forward();
+        break;
+      case 'B':
+        Serial.println("후진");
+        Go_Backward();
+        break;
+      case 'L':
+        Serial.println("좌회전");
+        Go_Left();
+        break;
+      case 'R':
+        Serial.println("우회전");
+        Go_Right();
+        break;
+      case 'S':
+        Serial.println("정지");
+        Emergency_Stop();
+        break;
+      default:
+        Serial.println("알 수 없는 명령");
+        break;
+    }
+  }
+
+  float distance1 = readDistance(trigPin1, echoPin1);
+  float distance2 = readDistance(trigPin2, echoPin2);
+
+  float minDistance;
+
+  if (distance1 < 0 && distance2 < 0) {
+    //Serial.println("센서 둘 다 감지 실패");
+    return;
+  } else if (distance1 < 0) {
+    minDistance = distance2;
+  } else if (distance2 < 0) {
+    minDistance = distance1;
+  } else {
+    minDistance = min(distance1, distance2);
+  }
+
+  Serial.print("감지된 최소 거리: ");
+  Serial.print(minDistance);
+  Serial.println(" cm");
+
+  if (minDistance < 15) {
+    Serial.println("stop");
+    Emergency_Stop();
+  } else if (minDistance < 30) {
+    Serial.println("Warning");
+    Warning_Sound();
+  } else {
+    Serial.println("Safe");
+    digitalWrite(speakerpin, LOW); 
+  }
+
+  delay(50);
+}
